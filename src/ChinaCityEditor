@@ -1,0 +1,48 @@
+Dim a$(200),x.w(200),y.w(200),z.b(200)
+BitMap 0,320,256,3
+Screen 0,0,0,320,256,2,0,"Huhu",1,0,0
+Window 0,0,0,320,256,0,"",1,0
+LoadBitMap 0,"/images/China",0
+Use Palette 0
+sp.l=Peek.l(Addr Screen(0))
+Use BitMap 0
+u=0
+Repeat
+Boxf 0,200,320,256,0
+MouseWait
+vy.w=Peek.w(16+sp.l)
+vx.w=Peek.w(18+sp.l)
+If vy.w>0
+WLocate 0,200
+u=u+1
+a$(u)=Edit$(20)
+NPrint "Groesse(1-3):"
+Repeat
+z=Asc(Inkey$)-48
+Until z>0 AND z<4
+z.b(u)=z
+x.w(u)=vx.w
+y.w(u)=vy.w
+Plot vx.w,vy.w,2
+End If
+Until vy.w=0
+byte.b=OpenFile(0,"ram:zwi")
+FileOutput 0
+Print "Data.w "
+NPrint u
+For i=1 To u
+Print "Data.b "
+NPrint z.b(i)
+Print "Data.w "
+Print x.w(i)
+Print ","
+NPrint y.w(i)
+Print "Data$ "
+Print Chr$(34)
+Print a$(i)
+NPrint Chr$(34)
+Next i
+CloseFile 0
+WindowOutput 0
+MouseWait
+End

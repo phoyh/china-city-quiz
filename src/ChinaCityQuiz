@@ -1,0 +1,643 @@
+;WBStartup
+Dim a$(200),x.w(200),y.w(200),z.b(200),yet.b(200),u.w(3),cap$(100),prov$(100)
+BitMap 0,320,256,3
+Screen 0,0,0,320,256,3,0,"Huhu",1,0,0
+Window 0,0,0,320,256,0,"",1,0
+Use Window 0
+LoadBitMap 0,"/images/China",0
+Use Palette 0
+sp.l=Peek.l(Addr Screen(0))
+Read u.w
+For i=1 To u.w
+Read z.b(i)
+u.w(z.b(i))+1
+If z.b(i)>1 Then u.w(1)+1
+If z.b(i)=3 Then u.w(2)+1
+Read x.w(i),y.w(i)
+Read a$(i)
+Plot x.w(i),y.w(i),5
+yet.b(i)=0
+Next i
+Read prov.b
+For i=1 To prov.b
+Read cap$(i),prov$(i)
+Next i
+LoadShape 1,"/images/City1"
+LoadShape 2,"/images/City2"
+LoadShape 3,"/images/City3"
+BlitMode InvMode
+
+Statement BlinkCity{h.w,dauer,blinks}
+SHARED x.w(),y.w(),z.b()
+For i=1 To blinks
+ Plot x.w(h.w),y.w(h.w),1
+  For ii=1 To z.b(h.w)
+   Blit ii,x.w(h.w)-ii,y.w(h.w)-ii
+   VWait dauer
+   Blit ii,x.w(h.w)-ii,y.w(h.w)-ii
+  Next ii
+  For iii=1 To z.b(h.w)
+   ii=z.b(h.w)+1-iii
+   Blit ii,x.w(h.w)-ii,y.w(h.w)-ii
+   VWait dauer
+   Blit ii,x.w(h.w)-ii,y.w(h.w)-ii
+  Next iii
+ If z.b(h.w)=1
+  Then Plot x.w(h.w),y.w(h.w),2
+  Else Plot x.w(h.w),y.w(h.w),5
+ End If
+ If i<>blinks Then VWait Int(dauer*1.5)
+ If Inkey$=Chr$(13) Then i=blinks
+Next i
+Plot x.w(h.w),y.w(h.w),5
+End Statement
+
+Function.w ChooseCity{}
+SHARED x.w(),y.w(),z.b(),vx.w,vy.w,u.w,sp.l,dif
+While JoyC(0)<>0:Wend
+Repeat
+ vy.w=Peek.w(16+sp.l)
+ vx.w=Peek.w(18+sp.l)
+ h.w=0:h2.l=200000
+ For i=1 To u.w
+  If dif<=z.b(i)
+   Then
+    zi.l=(x.w(i)-vx.w)^2+(y.w(i)-vy.w)^2
+    If zi.l<h2.l Then h.w=i:h2.l=zi.l
+  End If
+ Next i
+ BlinkCity{h.w,5,1}
+Until JoyC(0)<>0
+Function Return h.w
+End Function
+
+WLocate 0,200
+Print "Normaler oder Hauptstadt-Modus(N/H)? "
+Repeat
+ h$=UCase$(Inkey$)
+Until h$="N" OR h$="H"
+NPrint h$
+If h$="H" Then Goto capitals
+Print "Namen oder Lage erraten (N/L)? "
+Repeat
+ h$=UCase$(Inkey$)
+Until h$="N" OR h$="L"
+NPrint h$
+kind=0
+If h$="L" Then kind=1
+Print "Schwierigkeitsgrad(1-3):  "
+dif=0
+Repeat
+j$=Inkey$
+If j$="1" Then dif=3
+If j$="2" Then dif=2
+If j$="3" Then dif=1
+Until dif>0
+NPrint j$
+Print u.w(dif)
+NPrint " Staedte!"
+Print "Keine Stadt zweimal(J/N)? "
+yetFlag=100
+Repeat
+j$=Inkey$
+If j$="j" Then yetFlag=1
+If j$="n" Then yetFlag=0
+Until yetFlag<2
+NPrint UCase$(j$)
+right=0
+round=0
+WColour 4
+exit=0
+Repeat
+ Boxf 0,200,320,256,0
+ If round>0
+  WLocate 200,245
+  WColour 2
+  Print right
+  Print "/"
+  Print round
+  WColour 4
+ End If
+ hh.w=h.w
+ Repeat
+  h.w=Rnd(u.w)+1
+ Until dif<=z.b(h.w) AND (yetFlag=0 OR yet.b(h.w)=0) AND (h.w<>hh.w OR right+1=u.w(dif))
+ oui=0
+ If kind=1
+  Then
+   WLocate 0,200
+   NPrint a$(h.w)
+   If h.w=ChooseCity{} Then oui=1
+  Else
+   BlinkCity{h.w,4,40-z.b(h.w)*10}
+   Blit z.b(h.w),x.w(h.w)-z.b(h.w),y.w(h.w)-z.b(h.w)
+   WLocate 0,200
+   h$=Edit$(20)
+   If h$=a$(h.w) AND h$<>"end" Then oui=1
+ End If
+ If oui=1
+  Then NPrint "Richtig!":yet.b(h.w)=1:right+1
+  Else Print "Falsch! "
+   If kind=0
+    Then Print "Es war ":Print a$(h):NPrint "!"
+    Else
+     If vy.w>0
+      Then
+       Print "Die Lage von "
+       Print a$(h.w)
+       NPrint " ist:"
+       BlinkCity{h.w,3,32-z.b(h.w)*8}
+     End If
+   End If
+ End If
+ If kind=0
+  Then
+   If h$<>"end"
+    Then round+1:While h$<>Chr$(13):h$=Inkey$:Wend
+    Else exit=1
+   End If
+   Blit z.b(h.w),x.w(h.w)-z.b(h.w),y.w(h.w)-z.b(h.w)
+   Plot x.w(h.w),y.w(h.w),5
+  Else
+   If vy.w>0
+    Then round+1:While JoyC(0)<>0:Wend:MouseWait
+    Else exit=1
+   End If
+ End If
+Until exit=1 OR (right=u.w(dif) AND yetFlag=1)
+Result:
+Boxf 0,200,320,256,0
+Print "Quote: "
+WColour 7
+Print Int(right/round*100+0.5)
+NPrint "%"
+If kind=0
+ Then MouseWait
+ Else While Inkey$="":Wend
+End If
+End
+
+capitals:
+Print "Hauptst. oder Provinzen erraten(H/P)? "
+Repeat
+ h$=UCase$(Inkey$)
+Until h$="P" OR h$="H"
+NPrint h$
+right=0:round=0
+While right<prov.b
+ Boxf 0,200,320,256,0
+ WLocate 0,200
+ round+1
+ Repeat
+  hp.b=Int(Rnd(prov.b)+1)
+ Until yet.b(hp.b)=0
+ up=0
+ If h$="P"
+  Then
+   WColour 4
+   Print "Wo liegt "
+   WColour 7
+   Print cap$(hp.b)
+   WColour 4
+   NPrint "?"
+   WColour 3
+   a$=Edit$(30)
+   If a$=prov$(hp.b) Then up=1
+  Else
+   WColour 3
+   Print "Hauptstadt von "
+   WColour 7
+   Print prov$(hp.b)
+   WColour 3
+   NPrint "?"
+   WColour 4
+   a$=Edit$(30)
+   If a$=cap$(hp.b) Then up=1
+ End If
+ NPrint ""
+ If up=1
+  Then
+   WColour 3
+   NPrint "Richtig!"
+   right+1
+   yet.b(hp.b)=1
+  Else
+   WColour 3
+   Print "Falsch, es war "
+   If h$="P"
+    Then Print prov$(hp.b)
+    Else Print cap$(hp.b)
+   End If
+   NPrint "!"
+ End If
+ While Inkey$="":Wend
+Wend
+Goto Result
+
+.citydata
+Data.w 125
+Data.b 3
+Data.w 172,152
+Data$ "Guang-zhou"
+Data.b 3
+Data.w 177,156
+Data$ "Xiang-gang"
+Data.b 3
+Data.w 201,122
+Data$ "Shang-hai"
+Data.b 3
+Data.w 195,121
+Data$ "Nan-jing"
+Data.b 3
+Data.w 179,127
+Data$ "Wu-han"
+Data.b 3
+Data.w 137,124
+Data$ "Chong-qing"
+Data.b 3
+Data.w 120,113
+Data$ "Cheng-du"
+Data.b 3
+Data.w 152,93
+Data$ "Xi-an"
+Data.b 3
+Data.w 161,84
+Data$ "Tai-yuan"
+Data.b 3
+Data.w 181,75
+Data$ "Tian-jin"
+Data.b 3
+Data.w 193,84
+Data$ "Qing-dao"
+Data.b 3
+Data.w 198,32
+Data$ "Ha-er-bin"
+Data.b 3
+Data.w 194,48
+Data$ "Chang-chun"
+Data.b 3
+Data.w 191,60
+Data$ "Shen-yang"
+Data.b 3
+Data.w 195,60
+Data$ "Fu-shun"
+Data.b 3
+Data.w 193,74
+Data$ "Da-lian"
+Data.b 2
+Data.w 196,65
+Data$ "Ben-xi"
+Data.b 3
+Data.w 193,66
+Data$ "An-shan"
+Data.b 1
+Data.w 200,68
+Data$ "Dan-dong"
+Data.b 1
+Data.w 203,61
+Data$ "Tong-hua"
+Data.b 1
+Data.w 197,56
+Data$ "Si-ping"
+Data.b 1
+Data.w 199,57
+Data$ "Liao-yuan"
+Data.b 1
+Data.w 213,50
+Data$ "Yan-ji"
+Data.b 1
+Data.w 211,41
+Data$ "Mu-dan-jiang"
+Data.b 2
+Data.w 201,50
+Data$ "Ji-lin"
+Data.b 1
+Data.w 206,33
+Data$ "Qia-mu-si"
+Data.b 1
+Data.w 204,28
+Data$ "He-gang"
+Data.b 1
+Data.w 199,24
+Data$ "Yi-chun"
+Data.b 2
+Data.w 181,28
+Data$ "Qi-qi-ha-er"
+Data.b 1
+Data.w 163,19
+Data$ "Hai-la-er"
+Data.b 1
+Data.w 171,34
+Data$ "Wu-lan-liao-te"
+Data.b 1
+Data.w 177,36
+Data$ "Bai-cheng"
+Data.b 1
+Data.w 186,62
+Data$ "Fu-xin"
+Data.b 1
+Data.w 185,68
+Data$ "Jin-zhou"
+Data.b 1
+Data.w 181,61
+Data$ "Chi-feng"
+Data.b 1
+Data.w 179,66
+Data$ "Cheng-de"
+Data.b 3
+Data.w 175,70
+Data$ "Bei-jing"
+Data.b 1
+Data.w 170,68
+Data$ "Xuan-hua"
+Data.b 1
+Data.w 166,66
+Data$ "Zhang-lia-kou"
+Data.b 1
+Data.w 160,70
+Data$ "Da-tong"
+Data.b 1
+Data.w 154,64
+Data$ "Hu-he-hao-te"
+Data.b 1
+Data.w 127,73
+Data$ "Yin-chuan"
+Data.b 2
+Data.w 147,66
+Data$ "Bao-tou"
+Data.b 1
+Data.w 173,73
+Data$ "Bao-ding"
+Data.b 2
+Data.w 169,78
+Data$ "Shi-jia-zhuang"
+Data.b 1
+Data.w 195,78
+Data$ "Yan-tai"
+Data.b 1
+Data.w 187,82
+Data$ "Wei-fang"
+Data.b 1
+Data.w 184,83
+Data$ "Bo-shan"
+Data.b 2
+Data.w 180,84
+Data$ "Ji-nan"
+Data.b 1
+Data.w 170,85
+Data$ "An-yang"
+Data.b 1
+Data.w 169,88
+Data$ "Xin-xiang"
+Data.b 1
+Data.w 171,91
+Data$ "Kai-feng"
+Data.b 2
+Data.w 166,91
+Data$ "Zheng-zhou"
+Data.b 1
+Data.w 160,92
+Data$ "Luo-yang"
+Data.b 1
+Data.w 146,92
+Data$ "Bao-ji"
+Data.b 1
+Data.w 137,93
+Data$ "Tian-shui"
+Data.b 2
+Data.w 126,85
+Data$ "Lan-zhou"
+Data.b 2
+Data.w 117,81
+Data$ "Xi-ning"
+Data.b 1
+Data.w 122,73
+Data$ "Wu-wei"
+Data.b 1
+Data.w 112,68
+Data$ "Zhang-ye"
+Data.b 1
+Data.w 101,66
+Data$ "Jiu-quan"
+Data.b 1
+Data.w 97,66
+Data$ "Lao-jun-miao"
+Data.b 2
+Data.w 61,50
+Data$ "Urumchi"
+Data.b 1
+Data.w 38,47
+Data$ "Yi-ning"
+Data.b 1
+Data.w 45,37
+Data$ "Ka-le-mai"
+Data.b 1
+Data.w 7,76
+Data$ "Ke-shi"
+Data.b 2
+Data.w 181,97
+Data$ "Xu-zhou"
+Data.b 1
+Data.w 192,95
+Data$ "Xin-hai-lan"
+Data.b 1
+Data.w 190,102
+Data$ "Qing-jiang"
+Data.b 1
+Data.w 181,106
+Data$ "Bang-fou"
+Data.b 1
+Data.w 198,118
+Data$ "Zhen-jiang"
+Data.b 1
+Data.w 198,121
+Data$ "Chang-zhou"
+Data.b 2
+Data.w 200,120
+Data$ "Wu-xi"
+Data.b 1
+Data.w 202,118
+Data$ "Nan-tong"
+Data.b 2
+Data.w 201,121
+Data$ "Su-zhou"
+Data.b 1
+Data.w 192,123
+Data$ "Wu-hu"
+Data.b 2
+Data.w 188,121
+Data$ "He-fei"
+Data.b 1
+Data.w 187,125
+Data$ "An-qing"
+Data.b 1
+Data.w 182,125
+Data$ "Huang-shi"
+Data.b 1
+Data.w 169,124
+Data$ "Sha-shi"
+Data.b 1
+Data.w 159,121
+Data$ "Yi-chang"
+Data.b 1
+Data.w 140,119
+Data$ "Wan-xian"
+Data.b 1
+Data.w 128,119
+Data$ "Nan-chong"
+Data.b 1
+Data.w 176,116
+Data$ "Xin-yang"
+Data.b 1
+Data.w 165,104
+Data$ "Nan-yang"
+Data.b 1
+Data.w 118,152
+Data$ "Ge-jiu"
+Data.b 2
+Data.w 117,139
+Data$ "Kun-ming"
+Data.b 1
+Data.w 120,129
+Data$ "Ya-bin"
+Data.b 1
+Data.w 127,128
+Data$ "Lu-zhou"
+Data.b 1
+Data.w 134,132
+Data$ "Zun-yi"
+Data.b 2
+Data.w 135,138
+Data$ "Gui-yang"
+Data.b 1
+Data.w 130,140
+Data$ "An-shun"
+Data.b 2
+Data.w 149,155
+Data$ "Nan-ning"
+Data.b 1
+Data.w 159,169
+Data$ "Hai-kou"
+Data.b 1
+Data.w 158,162
+Data$ "Zhan-jiang"
+Data.b 1
+Data.w 161,159
+Data$ "Mao-ming"
+Data.b 1
+Data.w 153,150
+Data$ "Liu-zhou"
+Data.b 1
+Data.w 156,141
+Data$ "Gui-lin"
+Data.b 1
+Data.w 158,137
+Data$ "Shao-yang"
+Data.b 1
+Data.w 161,137
+Data$ "Heng-yang"
+Data.b 1
+Data.w 162,133
+Data$ "Xiang-tan"
+Data.b 1
+Data.w 165,134
+Data$ "Zhu-zhou"
+Data.b 2
+Data.w 164,131
+Data$ "Chang-sha"
+Data.b 1
+Data.w 157,128
+Data$ "Chang-de"
+Data.b 1
+Data.w 173,128
+Data$ "Jiu-jiang"
+Data.b 2
+Data.w 172,134
+Data$ "Nan-chang"
+Data.b 1
+Data.w 178,131
+Data$ "Jing-de-zhen"
+Data.b 2
+Data.w 196,124
+Data$ "Hang-zhou"
+Data.b 1
+Data.w 198,126
+Data$ "Shao-xing"
+Data.b 1
+Data.w 201,127
+Data$ "Ning-bo"
+Data.b 1
+Data.w 197,135
+Data$ "Wen-zhou"
+Data.b 1
+Data.w 162,151
+Data$ "Wu-zhou"
+Data.b 1
+Data.w 170,153
+Data$ "Fo-shan"
+Data.b 1
+Data.w 173,157
+Data$ "Ao-men"
+Data.b 2
+Data.w 192,142
+Data$ "Fu-zhou"
+Data.b 1
+Data.w 172,145
+Data$ "Shao-guan"
+Data.b 1
+Data.w 177,139
+Data$ "Gan-zhou"
+Data.b 1
+Data.w 180,148
+Data$ "Chao-an"
+Data.b 1
+Data.w 183,151
+Data$ "Shan-tou"
+Data.b 1
+Data.w 184,145
+Data$ "Zhang-zhou"
+Data.b 1
+Data.w 186,145
+Data$ "Xia-men"
+Data.b 1
+Data.w 189,144
+Data$ "Quan-zhou"
+Data.b 3
+Data.w 202,145
+Data$ "Tai-bei"
+Data.b 2
+Data.w 200,153
+Data$ "Gao-xiong"
+Data.b 1
+Data.w 200,149
+Data$ "Tai-zhong"
+
+.provincedata
+Data.b 27
+Data$ "Lhasa","Xi-zang(AR)"
+Data$ "Urumchi","Xin-jiang(AR)"
+Data$ "Lan-zhou","Gan-su"
+Data$ "Xi-ning","Qing-hai"
+Data$ "Cheng-du","Si-chuan"
+Data$ "Kun-ming","Yun-nan"
+Data$ "Hu-he-hao-te","Innere Mongolei(AR)"
+Data$ "Yin-chuan","Hui Ning-xia(AR)"
+Data$ "Xi-an","Shaan-xi"
+Data$ "Gui-yang","Gui-zhou"
+Data$ "Nan-ning","Zhuang Guang-xi(AR)"
+Data$ "Ha-er-bin","Hei-long-jiang"
+Data$ "Chang-chun","Ji-lin"
+Data$ "Shen-yang","Liao-ning"
+Data$ "Shi-jia-zhuang","He-bei"
+Data$ "Tai-yuan","Shan-xi"
+Data$ "Ji-nan","Shan-dong"
+Data$ "Zheng-zhou","He-nan"
+Data$ "Nan-jing","Jiang-su"
+Data$ "He-fei","An-hui"
+Data$ "Wu-han","Hu-bei"
+Data$ "Hang-zhou","Zhe-jiang"
+Data$ "Fu-zhou","Fu-jian"
+Data$ "Nan-chang","Jiang-xi"
+Data$ "Chang-sha","Hu-nan"
+Data$ "Guang-zhou","Guang-dong"
+Data$ "Tai-bei","Tai-wan"
